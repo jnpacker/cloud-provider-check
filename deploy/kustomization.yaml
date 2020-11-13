@@ -1,0 +1,5 @@
+resources:
+- role.yaml
+- rolebinding.yaml
+- sa.yaml
+- cloudproviderquotacheck-cronjob.yaml
