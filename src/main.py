@@ -63,6 +63,6 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                         if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > 0.85 and quota['name']['value'] != 'NetworkWatchers':
                             msg = quota['name']['localizedValue'] + " " + str(quota['currentValue']) + "/" + str(quota['limit'])
                             print(" \ -> " + msg)
-                            eventName = 'lowquota-' + provider_name + "-" + quota['name']['value']
-                            event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Low quota for cloud provider " + provider_name + ": " + msg, 'LowQuota', 'Warning', api_core)
+                            eventName = 'quota-' + provider_name + "-" + quota['name']['value']
+                            event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Full quota for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
                         # clientSecret  subscriptionId tenantId clientId
