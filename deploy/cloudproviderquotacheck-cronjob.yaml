@@ -2,7 +2,7 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: hibernation-cronjob
+  name: cloudprovider-quotacheck-cronjob
 spec:
   # Time is measured in coordinated universal time (UTC)
   #          ┌───────────── minute (0 - 59)
