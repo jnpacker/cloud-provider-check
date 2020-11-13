@@ -1,4 +1,4 @@
-REPO_URL := quay.io/jpacker
+REPO_URL := ${REPO_URL}
 TAG := 0.1
 NAMESPACE := open-cluster-management
 
