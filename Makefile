@@ -1,5 +1,5 @@
 REPO_URL := ${REPO_URL}
-TAG := 0.2
+TAG := 0.3
 NAMESPACE := open-cluster-management
 
 all:

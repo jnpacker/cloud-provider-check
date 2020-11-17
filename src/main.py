@@ -6,9 +6,20 @@ import yaml
 import event
 import json
 
-#from googleapiclient import discovery
 import azurerm
+import boto3
+
+from googleapiclient import discovery
+from google.oauth2 import service_account
+
 from pprint import pprint
+#quota_client = boto3.client('service-quotas')
+#response = quota_client.list_service_quotas(ServiceCode='vpc')
+#response = quota_client.get_service_quota(ServiceCode='vpc', QuotaCode='L-E79EC296')
+#pprint(response)
+
+
+
 
 configuration = kubernetes.client.Configuration()
 configuration.verify_ssl = False
@@ -24,6 +35,11 @@ if 'CM_TOKEN' not in os.environ:
 else:
     os.getenv('CM_TOKEN')
 configuration.api_key = {"authorization": "Bearer " + CM_TOKEN}
+
+# Threshold percentage for which to fire a warning event
+CM_THRESHOLD=0.85
+if 'CM_THRESHOLD' in os.environ:
+    CM_THRESHOLD = int(os.getenv('CM_THRESHOLD')) / 100
 
 # Read the API URL
 if 'CM_API_URL' not in os.environ:
@@ -41,16 +57,34 @@ with kubernetes.client.ApiClient(configuration) as api_client:
             provider_name = cloud_provider.metadata.name
             if cloud == "aws":
                 print("AWS  : Processing Access Key: " + secret_data['awsAccessKeyID'])
+                #quota_client = boto3.client('service-quotas')
+                #response = quota_client.list_service_quotas(ServiceCode='vpc')
+                #pprint(response)
                 # awsSecretAccessKeyID awsAccessKeyID
+
             elif cloud == "gcp":
-                # gcProjectID
-                print("GCP: Processing ProjectID: " + secret_data['gcProjectID'])
-                service_account = eval(secret_data['gcServiceAccountKey'])
-                #with open('/tmp/gcp.json', 'w') as outfile:
-                #    json.dump(service_account, outfile)
-                #client = dns.Client.from_service_account_json('/tmp/gcp.json')
-                #quotas = client.quotas()
-                #pprint(quotas)
+                # gcProjectID gcServiceAccountKey
+                # Setup the service account json credential
+                with open('/tmp/gcp.json', 'w', encoding='utf-8') as outfile:
+                    json.dump(json.loads(secret_data['gcServiceAccountKey']), outfile)
+                cred = service_account.Credentials.from_service_account_file('/tmp/gcp.json')
+
+                compute = discovery.build('compute', 'v1', credentials=cred)
+                for region in ['global','europe-west3','us-east1','us-west1','us-central1']:
+                    print("GCP: Processing Cloud Provider: " + provider_name + " in region: " + region)
+                    if region == 'global':
+                        req = compute.projects().get(project=secret_data['gcProjectID'])
+                    else:
+                        req = compute.regions().get(project=secret_data['gcProjectID'], region=region)
+
+                    resp = req.execute()
+                    for quota in resp['quotas']:
+                        if quota['limit'] != 0 and quota['usage'] / quota['limit'] > CM_THRESHOLD:
+                            msg = quota['metric'] + " " + str(quota['usage']) + "/" + str(quota['limit'])
+                            print(" \ -> " + msg)
+                            eventName = 'quota-' + provider_name + "-" + quota['metric']
+                            event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Full quota for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
+
             elif cloud == "azr":
                 access_token = azurerm.get_access_token(secret_data['tenantId'], secret_data['clientId'], secret_data['clientSecret'])
                 for region in ['centralus','eastus','eastus2','westus','westus2','southcentralus']:
@@ -60,7 +94,7 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                     print("Azure: Processing Cloud Provider: " + provider_name + " in region: " + region)
 
                     for quota in compute_usage:
-                        if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > 0.85 and quota['name']['value'] != 'NetworkWatchers':
+                        if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > CM_THRESHOLD and quota['name']['value'] != 'NetworkWatchers':
                             msg = quota['name']['localizedValue'] + " " + str(quota['currentValue']) + "/" + str(quota['limit'])
                             print(" \ -> " + msg)
                             eventName = 'quota-' + provider_name + "-" + quota['name']['value']
