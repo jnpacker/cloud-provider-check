@@ -18,9 +18,11 @@ spec:
           serviceAccountName: cloudprovider-quotacheck
           containers:
           - name: worker
-            image: quay.io/jpacker/cloud-provider-quota-check@sha256:4ff0cac39a05eae3938202566d229e9e51f808800b710e0f91bb787312144f24
+            image: quay.io/jpacker/cloud-provider-quota-check@sha256:d608f8de34b5ab056ddc58d478d449d761efa59b289d4dddc311902ea65e6e22
             command: ['python','main.py']
             env:
             - name: PYTHONWARNINGS
-              value: "ignore:Unverified HTTPS request"  
+              value: "ignore:Unverified HTTPS request"
+            - name: CM_THRESHOLD
+              value: "85"             # Threshold percentage. When usage exceeds a Kube warning event is fired
           restartPolicy: OnFailure

@@ -53,50 +53,56 @@ with kubernetes.client.ApiClient(configuration) as api_client:
     api_core = kubernetes.client.CoreV1Api(api_client)
     for cloud in provider_types:
         for cloud_provider in api_core.list_secret_for_all_namespaces(label_selector="cluster.open-cluster-management.io/provider="+cloud).items:
-            secret_data = yaml.safe_load(base64.b64decode(cloud_provider.data['metadata']))
-            provider_name = cloud_provider.metadata.name
-            if cloud == "aws":
-                print("AWS  : Processing Access Key: " + secret_data['awsAccessKeyID'])
-                #quota_client = boto3.client('service-quotas')
-                #response = quota_client.list_service_quotas(ServiceCode='vpc')
-                #pprint(response)
-                # awsSecretAccessKeyID awsAccessKeyID
+            try:
+                secret_data = yaml.safe_load(base64.b64decode(cloud_provider.data['metadata']))
+                provider_name = cloud_provider.metadata.name
+                if cloud == "aws":
+                    print("AWS  : Processing Access Key: " + secret_data['awsAccessKeyID'])
+                    #quota_client = boto3.client('service-quotas')
+                    #response = quota_client.list_service_quotas(ServiceCode='vpc')
+                    #pprint(response)
+                    # awsSecretAccessKeyID awsAccessKeyID
 
-            elif cloud == "gcp":
-                # gcProjectID gcServiceAccountKey
-                # Setup the service account json credential
-                with open('/tmp/gcp.json', 'w', encoding='utf-8') as outfile:
-                    json.dump(json.loads(secret_data['gcServiceAccountKey']), outfile)
-                cred = service_account.Credentials.from_service_account_file('/tmp/gcp.json')
+                elif cloud == "gcp":
+                    # gcProjectID gcServiceAccountKey
+                    # Setup the service account json credential
+                    with open('/tmp/gcp.json', 'w', encoding='utf-8') as outfile:
+                        json.dump(json.loads(secret_data['gcServiceAccountKey']), outfile)
+                    cred = service_account.Credentials.from_service_account_file('/tmp/gcp.json')
 
-                compute = discovery.build('compute', 'v1', credentials=cred)
-                for region in ['global','europe-west3','us-east1','us-west1','us-central1']:
-                    print("GCP: Processing Cloud Provider: " + provider_name + " in region: " + region)
-                    if region == 'global':
-                        req = compute.projects().get(project=secret_data['gcProjectID'])
-                    else:
-                        req = compute.regions().get(project=secret_data['gcProjectID'], region=region)
+                    compute = discovery.build('compute', 'v1', credentials=cred)
+                    for region in ['global','europe-west3','us-east1','us-west1','us-central1']:
+                        print("GCP: Processing Cloud Provider: " + provider_name + " in region: " + region)
+                        if region == 'global':
+                            req = compute.projects().get(project=secret_data['gcProjectID'])
+                        else:
+                            req = compute.regions().get(project=secret_data['gcProjectID'], region=region)
 
-                    resp = req.execute()
-                    for quota in resp['quotas']:
-                        if quota['limit'] != 0 and quota['usage'] / quota['limit'] > CM_THRESHOLD:
-                            msg = quota['metric'] + " " + str(quota['usage']) + "/" + str(quota['limit'])
-                            print(" \ -> " + msg)
-                            eventName = 'quota-' + provider_name + "-" + quota['metric']
-                            event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Full quota for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
+                        resp = req.execute()
+                        for quota in resp['quotas']:
+                            if quota['limit'] != 0 and quota['usage'] / quota['limit'] > CM_THRESHOLD:
+                                msg = quota['metric'] + " " + str(quota['usage']) + "/" + str(quota['limit'])
+                                print(" \ -> " + msg)
+                                eventName = 'quota-' + provider_name + "-" + quota['metric']
+                                event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Quota warning for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
 
-            elif cloud == "azr":
-                access_token = azurerm.get_access_token(secret_data['tenantId'], secret_data['clientId'], secret_data['clientSecret'])
-                for region in ['centralus','eastus','eastus2','westus','westus2','southcentralus']:
-                    compute_usage = azurerm.get_compute_usage(access_token, secret_data['subscriptionId'], region)['value']
-                    compute_usage = compute_usage + azurerm.get_network_usage(access_token, secret_data['subscriptionId'], region)['value']
-                    compute_usage = compute_usage + azurerm.get_storage_usage(access_token, secret_data['subscriptionId'], region)['value']
-                    print("Azure: Processing Cloud Provider: " + provider_name + " in region: " + region)
+                elif cloud == "azr":
+                    access_token = azurerm.get_access_token(secret_data['tenantId'], secret_data['clientId'], secret_data['clientSecret'])
+                    for region in ['centralus','eastus','eastus2','westus','westus2','southcentralus']:
+                        compute_usage = azurerm.get_compute_usage(access_token, secret_data['subscriptionId'], region)['value']
+                        compute_usage = compute_usage + azurerm.get_network_usage(access_token, secret_data['subscriptionId'], region)['value']
+                        compute_usage = compute_usage + azurerm.get_storage_usage(access_token, secret_data['subscriptionId'], region)['value']
+                        print("Azure: Processing Cloud Provider: " + provider_name + " in region: " + region)
 
-                    for quota in compute_usage:
-                        if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > CM_THRESHOLD and quota['name']['value'] != 'NetworkWatchers':
-                            msg = quota['name']['localizedValue'] + " " + str(quota['currentValue']) + "/" + str(quota['limit'])
-                            print(" \ -> " + msg)
-                            eventName = 'quota-' + provider_name + "-" + quota['name']['value']
-                            event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Full quota for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
-                        # clientSecret  subscriptionId tenantId clientId
+                        for quota in compute_usage:
+                            if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > CM_THRESHOLD and quota['name']['value'] != 'NetworkWatchers':
+                                msg = quota['name']['localizedValue'] + " " + str(quota['currentValue']) + "/" + str(quota['limit'])
+                                print(" \ -> " + msg)
+                                eventName = 'quota-' + provider_name + "-" + quota['name']['value']
+                                event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Quota warning for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
+                            # clientSecret  subscriptionId tenantId clientId
+            except:
+                event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', 'cloudprovider-quotacheck', "Cloud Provider quota check for cloud provider " + provider_name + " failed", 'cloudproviderquotacheckfail', 'Warning', api_core)
+                if 'MY_POD_NAMESPACE' in os.environ and 'MY_POD_NAME' in os.environ:
+                    event.fire(os.getenv('MY_POD_NAME'), os.getenv('MY_POD_NAMESPACE'), 'pod', 'cloudprovider-quotacheck', 'Cloud Provider quota check for cloud providers failed', 'cloudproviderquotacheckfailed', 'Warning', api_core)
+                raise

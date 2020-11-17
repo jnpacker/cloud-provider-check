@@ -25,7 +25,7 @@ def fire(objName, namespaceName, objKind, eventName, message, reason, eType, api
         else:
             body.count = existingEvent.count + 1
         api_core.patch_namespaced_event(eventName, namespaceName, body)
-        print("  \-> Update existing event " + eventName + " count " + str(body.count))
+        print("  \-> Update existing event " + eventName + ", event count " + str(body.count))
     else:
         body.count = 1
         api_core.create_namespaced_event(namespaceName, body)

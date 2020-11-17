@@ -28,10 +28,37 @@ oc logs <POD_NAME_FROM_PREVIOUS_COMMAND>
 ```
 
 
-## Change namespace
-Edit the `Makefile` and change the value of
-```Makefile
-NAMESPACE := open-cluster-management   # Use your namespace of choice
+## Change the threshold percentage
+Update:
+```bash
+./deploy/cloudproviderquotacheck-cronjob.yaml
+./deploy/cloudproviderquotacheck-job.yaml
+```
+Change the `env` variable `CM_THRESHOLD`
+```yaml
+env:
+- name: PYTHONWARNINGS
+    value: "ignore:Unverified HTTPS request"
+- name: CM_THRESHOLD
+    value: "85"
+```
+
+## Required environment variables when running locally
+```bash
+export CM_TOKEN=<TOKEN_VALUE>                  # The OCP connection token
+export CM_API_URL=https://my.cluster.com:6443  # The OCP API URL
+
+# OPTIONL
+export CM_THRESHOLD=85                         # The threshold above which a kube warning event is fired
+
+# Required to BUILD & PUSH
+export tag=0.X                   # Used to tag the image
+export REPO_URL=quay.io/my-repo  # Repository to push image. requires docker already be authenticated
+```
+
+### OPTIONAL: To change namespace used
+```bash
+export NAMESPACE         # Used to work with a different namespace
 ```
 Also edit deploy/rolebinding.yaml file and replace `open-cluster-management` with yournamespace of choice
 ```yaml
