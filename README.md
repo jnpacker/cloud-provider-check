@@ -1,5 +1,8 @@
 # cloud-provider-quota-check
 This Kubernetes cronjob is able to detect low quota values for Cloud Providers defined in Red Hat Advanced Cluster Management.
+## Supported Cloud Providers
+1. GCP
+2. Azure
 
 ## How it works
 The code checks every 60min for quota values across all cloud providers on the system. It generates Kubernetes **Warning** events in the namespaces where the Cloud Provider secrets are stored. It also associates the event to the Cloud provider secret.
