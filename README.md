@@ -8,7 +8,7 @@ This Kubernetes cronjob is able to detect low quota values for Cloud Providers d
 The code checks every 60min for quota values across all cloud providers on the system. It generates Kubernetes **Warning** events in the namespaces where the Cloud Provider secrets are stored. It also associates the event to the Cloud provider secret.
 
 # Deploy
-It is as simple as connecting to OpenShift and running the following command:
+It is as simple as connecting to OpenShift hosting Advanced Cluster Management and running the following command:
 ```bash
 # Log into Openshift
 make setup
