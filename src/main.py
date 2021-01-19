@@ -1,4 +1,4 @@
-#author: jpacker@redhat.com
+#author: github.com/jnpacker
 import kubernetes.client
 import os
 import base64
@@ -82,7 +82,7 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                         for quota in resp['quotas']:
                             if quota['limit'] != 0 and quota['usage'] / quota['limit'] > CM_THRESHOLD:
                                 msg = quota['metric'] + " " + str(quota['usage']) + "/" + str(quota['limit'])
-                                print(" \ -> " + msg)
+                                print(" \\ -> " + msg)
                                 eventName = 'quota-' + provider_name + "-" + quota['metric']
                                 event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Quota warning for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
 
@@ -97,7 +97,7 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                         for quota in compute_usage:
                             if quota['limit'] != 0 and quota['currentValue'] / quota['limit'] > CM_THRESHOLD and quota['name']['value'] != 'NetworkWatchers':
                                 msg = quota['name']['localizedValue'] + " " + str(quota['currentValue']) + "/" + str(quota['limit'])
-                                print(" \ -> " + msg)
+                                print(" \\ -> " + msg)
                                 eventName = 'quota-' + provider_name + "-" + quota['name']['value']
                                 event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Quota warning for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
                             # clientSecret  subscriptionId tenantId clientId

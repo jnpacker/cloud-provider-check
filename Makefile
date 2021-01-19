@@ -13,7 +13,7 @@ all:
 	@echo "make run       # Executes the code locally via \"python\""
 	@echo "  Environment Variables needed:"
 	@echo "    export CM_TOKEN=      # This is your ACM Hub access token"
-	@echo "    export CM_API_URL=    # This is your ACM Hub API URL: https://mycluster.com:6443
+	@echo "    export CM_API_URL=    # This is your ACM Hub API URL: https://mycluster.com:6443"
 	@echo "    export CM_THRESHOLD=  # This is the percentage threshold above which a warning event occurs" 
 
 
