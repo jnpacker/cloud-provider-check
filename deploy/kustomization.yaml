@@ -5,4 +5,4 @@ resources:
 - role.yaml
 - rolebinding.yaml
 - sa.yaml
-- temporary.yaml
+- cloudproviderquotacheck-cronjob.yaml
