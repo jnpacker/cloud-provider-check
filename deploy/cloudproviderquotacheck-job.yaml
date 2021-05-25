@@ -9,7 +9,7 @@ spec:
       serviceAccountName: cloudprovider-quotacheck
       containers:
       - name: worker
-        image: quay.io/jpacker/cloud-provider-quota-check@sha256:d608f8de34b5ab056ddc58d478d449d761efa59b289d4dddc311902ea65e6e22
+        image: quay.io/jpacker/cloud-provider-quota-check@sha256:3b72c20772c977d1bd85aced11695eb1f85047e1ce14f5c9ed06d9731356793c
         command: ['python','main.py']
         env:
         - name: PYTHONWARNINGS

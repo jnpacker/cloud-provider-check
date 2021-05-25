@@ -18,10 +18,13 @@ all:
 
 
 build:
-	docker build . -t ${REPO_URL}/cloud-provider-quota-check:${TAG}
+	docker build . -t ${REPO_URL}/cloud-provider-quota-check:${TAG} -t ${REPO_URL}/cloud-provider-quota-check:latest
 
 push: build
 	./docker-tools/push.sh
+
+push-latest: push
+	docker push ${REPO_URL}/cloud-provider-quota-check:latest
 
 clean:
 	docker image rm ${REPO_URL}/cloud-provider-quota-check:${TAG}
