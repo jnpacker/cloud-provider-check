@@ -1,11 +1,14 @@
 # cloud-provider-quota-check
 This Kubernetes cronjob is able to detect low quota values for Cloud Providers defined in Red Hat Advanced Cluster Management.
+## Supported Cloud Providers
+1. GCP
+2. Azure
 
 ## How it works
-The code checks every 60min for quota values across all cloud providers on the system. It generates Kubernetes **Warning** events in the namespaces where the Cloud Provider secret is stored. It also associates the event to the Cloud provider secret.
+The code checks every 60min for quota values across all cloud providers on the system. It generates Kubernetes **Warning** events in the namespaces where the Cloud Provider secrets are stored. It also associates the event to the Cloud provider secret.
 
 # Deploy
-It is as simple as connecting to OpenShift and running the following command:
+It is as simple as connecting to OpenShift hosting Advanced Cluster Management and running the following command:
 ```bash
 # Log into Openshift
 make setup
@@ -14,6 +17,7 @@ You can view the status of the cronjob:
 ```bash
 oc get cronjobs -A
 ```
+Use the OpenShift event view to see output. Filter on `quota`
 
 
 ## Manually run a quota check
@@ -40,10 +44,10 @@ env:
 - name: PYTHONWARNINGS
     value: "ignore:Unverified HTTPS request"
 - name: CM_THRESHOLD
-    value: "85"
+    value: "85"             # This is the threshold percentage after which a kube warning event is fired
 ```
 
-## Required environment variables when running locally
+## Required environment variables when running from your local machine
 ```bash
 export CM_TOKEN=<TOKEN_VALUE>                  # The OCP connection token
 export CM_API_URL=https://my.cluster.com:6443  # The OCP API URL
