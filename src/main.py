@@ -58,7 +58,7 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                 secret_data = cloud_provider.data
                 provider_name = cloud_provider.metadata.name
                 if cloud == "aws":
-                    print("AWS  : Processing Access Key: " + dc(secret_data['awsAccessKeyID']))
+                    print("AWS  : Processing Access Key: " + dc(secret_data['aws_access_key_id']))
                     #quota_client = boto3.client('service-quotas')
                     #response = quota_client.list_service_quotas(ServiceCode='vpc')
                     #pprint(response)
@@ -75,10 +75,10 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                     for region in ['global','europe-west3','us-east1','us-west1','us-central1']:
                         print("GCP: Processing Cloud Provider: " + provider_name + " in region: " + region)
                         if region == 'global':
-                            print("gcProjectID: " + dc(secret_data['gcProjectID']))
-                            req = compute.projects().get(project=dc(secret_data['gcProjectID']))
+                            print("gcProjectID: " + dc(secret_data['projectID']))
+                            req = compute.projects().get(project=dc(secret_data['projectID']))
                         else:
-                            req = compute.regions().get(project=dc(secret_data['gcProjectID']), region=region)
+                            req = compute.regions().get(project=dc(secret_data['projectID']), region=region)
 
                         resp = req.execute()
                         for quota in resp['quotas']:
@@ -89,11 +89,12 @@ with kubernetes.client.ApiClient(configuration) as api_client:
                                 event.fire(cloud_provider.metadata.name, cloud_provider.metadata.namespace, 'secret', eventName, "Quota warning for cloud provider " + provider_name + ": " + msg, 'FullQuota', 'Warning', api_core)
 
                 elif cloud == "azr":
-                    access_token = azurerm.get_access_token(dc(secret_data['tenantId']), dc(secret_data['clientId']), dc(secret_data['clientSecret']))
+                    azOSP = json.loads(dc(secret_data['osServicePrincipal.json']))
+                    access_token = azurerm.get_access_token(azOSP['tenantId'], azOSP['clientId'], azOSP['clientSecret'])
                     for region in ['centralus','eastus','eastus2','westus','westus2','southcentralus']:
-                        compute_usage = azurerm.get_compute_usage(access_token, dc(secret_data['subscriptionId']), region)['value']
-                        compute_usage = compute_usage + azurerm.get_network_usage(access_token, dc(secret_data['subscriptionId']), region)['value']
-                        compute_usage = compute_usage + azurerm.get_storage_usage(access_token, dc(secret_data['subscriptionId']), region)['value']
+                        compute_usage = azurerm.get_compute_usage(access_token, azOSP['subscriptionId'], region)['value']
+                        compute_usage = compute_usage + azurerm.get_network_usage(access_token, azOSP['subscriptionId'], region)['value']
+                        compute_usage = compute_usage + azurerm.get_storage_usage(access_token, azOSP['subscriptionId'], region)['value']
                         print("Azure: Processing Cloud Provider: " + provider_name + " in region: " + region)
 
                         for quota in compute_usage:
