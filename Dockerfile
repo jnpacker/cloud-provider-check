@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/python-38
+FROM registry.access.redhat.com/ubi8/python-39
 
 # Add the program and the configuration file
 ADD ./src/main.py .
